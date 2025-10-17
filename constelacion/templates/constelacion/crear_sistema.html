@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Crear Nuevo Sistema</title>
+</head>
+<body>
+    <h2>🚀 Iniciar una Nueva Constelación</h2>
+    
+    <p>Define el enfoque o el tema que deseas constelar:</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <label for="titulo">Título o Enfoque:</label><br>
+        <input type="text" id="titulo" name="titulo" required><br><br>
+
+        <label for="descripcion">Intención/Notas Iniciales:</label><br>
+        <textarea id="descripcion" name="descripcion" rows="5"></textarea><br><br>
+
+        <button type="submit">Crear y Empezar a Constelar</button>
+    </form>
+
+    <p><a href="{% url 'inicio' %}">Volver al inicio</a></p>
+</body>
+</html>

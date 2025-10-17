@@ -1,0 +1,16 @@
+# Archivos y carpetas de Python/Django
+
+# Entorno Virtual
+venv/
+__pycache__/
+
+# Base de Datos Local
+db.sqlite3
+
+# Archivos de static y media generados
+staticfiles/
+media/
+
+# Archivos de logs y configuración local
+*.log
+.DS_Store

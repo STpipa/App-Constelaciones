@@ -78,8 +78,12 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 DATABASES = {
     'default': {
+        # En desarrollo, usa SQLite:
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+
+        # En producción (la configuración del hosting sobrescribirá esto):
+        # El hosting usará la URL de conexión a la base de datos (DATABASE_URL)
     }
 }
 

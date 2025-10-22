@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel de Administración</title>
+</head>
+<body>
+    <h2>Panel de Administración (Terapeuta) 👁️</h2>
+    <h3>Sistemas Constelares de Todos los Clientes</h3>
+    
+    {% if sistemas %}
+        <table border="1" cellpadding="10" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Cliente</th>
+                    <th>Fecha Actualización</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sistema in sistemas %}
+                <tr>
+                    <td>{{ sistema.titulo }}</td>
+                    <td>{{ sistema.cliente.username }}</td>
+                    <td>{{ sistema.fecha_actualizacion|date:"d M Y H:i" }}</td>
+                    <td>
+                        <a href="{% url 'constelacion:detalle_sistema' pk=sistema.pk %}">Ver Constelación</a>
+                        <a href="{% url 'admin:constelacion_sistemaconstelar_change' sistema.pk %}">Editar Datos (Admin)</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Aún no hay sistemas creados por los clientes.</p>
+    {% endif %}
+
+    <p><a href="{% url 'admin:index' %}">Ir al Panel Clásico de Django</a> | <a href="{% url 'logout' %}">Cerrar Sesión</a></p>
+</body>
+</html>

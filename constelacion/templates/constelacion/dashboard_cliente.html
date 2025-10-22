@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mi Panel de Constelaciones</title>
+</head>
+<body>
+    <h2>Hola, {{ user.username }} 👋</h2>
+    <h3>Mis Sistemas Constelares Creados</h3>
+    
+    <p><a href="{% url 'constelacion:crear_sistema' %}">➕ Iniciar Nueva Constelación</a></p>
+    
+    {% if sistemas %}
+        <table border="1" cellpadding="10" cellspacing="0">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Fecha de Creación</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sistema in sistemas %}
+                <tr>
+                    <td>{{ sistema.titulo }}</td>
+                    <td>{{ sistema.fecha_creacion|date:"d M Y H:i" }}</td>
+                    <td>
+                        <a href="{% url 'constelacion:detalle_sistema' pk=sistema.pk %}">Ver / Editar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>Aún no has creado ningún sistema. ¡Empieza uno ahora!</p>
+    {% endif %}
+
+    <p><a href="{% url 'logout' %}">Cerrar Sesión</a></p>
+</body>
+</html>

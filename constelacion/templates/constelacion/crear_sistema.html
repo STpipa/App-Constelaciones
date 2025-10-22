@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Crear Nuevo Sistema</title>
+</head>
+<body>
+    <h1>Crear Nuevo Sistema Constelar</h1>
+    <p>Introduce un título descriptivo para el sistema que vas a trabajar.</p>
+
+    <form method="post">
+        {% csrf_token %}
+        
+        {{ form.as_p }}
+        
+        <button type="submit">Comenzar a Constelar</button>
+    </form>
+    
+    <p style="margin-top: 20px;"><a href="{% url 'constelacion:dashboard_cliente' %}">Cancelar y Volver al Panel</a></p>
+</body>
+</html>

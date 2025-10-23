@@ -65,7 +65,7 @@ def crear_sistema(request):
 
             # El campo 'constelacion_data' (el JSON) se deja vacío por ahora
             # ya que se llenará en detalle_sistema.
-             
+            
             nuevo_sistema.save()
 
             # Redirigimos al lienzo interactivo para empezar a constelar
@@ -78,8 +78,8 @@ def crear_sistema(request):
         
 @login_required
 def detalle_sistema(request, pk):
-    # Usamos get_object_or_404 para evitar un error 500 si el PK no existe
-    sistema = get_object_or_404(SistemaConstelar, pk=pk) 
+    
+    sistema = get_object_or_404(SistemaConstelar, pk=pk) # Usa get_object_or_404 por robustez 
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -87,6 +87,10 @@ def detalle_sistema(request, pk):
         if action == 'guardar':
             # 1. Obtiene la cadena JSON
             constelacion_data_json = request.POST.get('constelacion_data', '[]')
+
+            # 💡 DEBUG: Confirma que la cadena JSON recibida NO está vacía
+            print("--- INICIO DE GUARDADO ---")
+            print(f"JSON recibido: {constelacion_data_json[:100]}...") # Muestra los primeros 100 caracteres
             
             # 2. Carga y Guarda el JSON
             try:
@@ -95,9 +99,15 @@ def detalle_sistema(request, pk):
                 # Si el JSON está mal, lo tratamos como vacío para evitar un error fatal
                 data = []
 
+            # 💡 DEBUG: Confirma que la variable 'data' de Python NO es una lista vacía
+            print(f"Número de elementos cargados: {len(data)}")
+
             sistema.configuracion_visual_json = data
             sistema.save()
             
+            # Esto asegura que la instancia 'sistema' tenga los datos más recientes
+            sistema = SistemaConstelar.objects.get(pk=sistema.pk)
+
             # 3. Regeneración de elementos (sin cambios aquí)
             sistema.elementos.all().delete() 
             for item in data:

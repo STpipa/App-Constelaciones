@@ -25,7 +25,7 @@ class SistemaConstelar(models.Model):
     
     # Campo para guardar la configuración visual del genograma (posición, líneas, etc.)
     # Esto guardará datos en formato JSON/Texto que usará el frontend JS
-    configuracion_visual_json = models.JSONField(blank=True, null=True, 
+    configuracion_visual_json = models.JSONField(default=list, blank=True, null=True, 
                                                 help_text="Datos JSON con las posiciones, colores y enlaces del diagrama.")
     
     def __str__(self):

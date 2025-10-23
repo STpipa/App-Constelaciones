@@ -54,20 +54,36 @@
             width: ANCHO,
             height: ALTO,
         });
-        const layer = new Konva.Layer();
+        let layer = new Konva.Layer(); // 
         stage.add(layer);
-        
+
         let elementos = []; // Estructura de datos para guardar la constelación
+
+        // ⚠️ CRUCIAL: Obtener los datos JSON del backend
+        // Este valor viene de la vista (views.py) y está listo para ser parseado
+        const datosJsonIniciales = JSON.parse('{{ datos_json_iniciales|safe }}');
+
+        // --------------------------------------------------------------------
+        // LÓGICA DE CARGA INICIAL: Reconstruir la constelación si existen datos
+        // --------------------------------------------------------------------
+        if (datosJsonIniciales && datosJsonIniciales.children && datosJsonIniciales.children.length > 0) {
+            // Usamos el método load() de Konva para restaurar la capa
+            layer.destroy(); // Eliminamos la capa vacía inicial
+
+            // ⬅️ CREAMOS Y REASIGNAMOS la capa con los datos.
+            layer = Konva.Node.create(datosJsonIniciales); // Recreamos la capa desde el JSON
+            
+            stage.add(layer);
+            layer.draw(); 
         
-        // Cargar datos iniciales
-        // Se asume que 'datos_json_iniciales' viene de la vista (views.py)
-        const datosIniciales = JSON.parse('{{ datos_json_iniciales|safe }}');
-        if (datosIniciales && datosIniciales.length > 0) {
-            elementos = datosIniciales;
-            elementos.forEach(data => {
-                renderElement(data.name, data.type, data.x, data.y, data.rotation || 0, data.img_src || '');
-            });
+            // También debes reconstruir los objetos Konva.Text a partir de los datos
+            // ... (Tu lógica para reconstruir los elementos a partir de datosJsonIniciales)
+        
+        } else {
+            // Si no hay datos, inicializamos con la capa vacía (que ya hiciste)
+            console.log("Sistema Constelar vacío. Comienza a crear!");
         }
+        
         
         // Función auxiliar para cargar imágenes
         function loadImage(src, callback) {
@@ -222,6 +238,44 @@
             }
         });
 
+        function guardarSistema() {
+            // 1. Serializar el estado de la capa principal (layer)
+            // El método toJSON() de Konva convierte el estado completo de la capa 
+            // y sus hijos (Elementos) en una cadena JSON.
+            const constelacionData = layer.toJSON();
+
+            // 2. Crear un formulario dinámico para enviar los datos por POST a Django
+            const form = document.createElement('form');
+            form.method = 'POST';
+            // El action debe apuntar a la misma URL de la vista detalle_sistema
+            form.action = ''; 
+
+            // 3. Crear el campo CSRF Token (Obligatorio en Django)
+            const csrfToken = document.createElement('input');
+            csrfToken.type = 'hidden';
+            csrfToken.name = 'csrfmiddlewaretoken';
+            // Obtenemos el valor del token que está en la plantilla
+            csrfToken.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            form.appendChild(csrfToken);
+
+            // 4. Crear el campo 'constelacion_data' (el JSON serializado)
+            const dataInput = document.createElement('input');
+            dataInput.type = 'hidden';
+            dataInput.name = 'constelacion_data';
+            dataInput.value = constelacionData; // El JSON del lienzo
+            form.appendChild(dataInput);
+    
+            // 5. Crear un campo 'action' para que la vista sepa qué hacer
+            const actionInput = document.createElement('input');
+            actionInput.type = 'hidden';
+            actionInput.name = 'action';
+            actionInput.value = 'guardar'; // Le decimos a Django que queremos guardar
+            form.appendChild(actionInput);
+
+            // 6. Enviar el formulario
+            document.body.appendChild(form);
+            form.submit();
+        }
 
         // 6. ACTUALIZAR POSICIÓN Y ROTACIÓN EN LOS DATOS
         function updateElementPosition(group) {

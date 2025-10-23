@@ -1,154 +1,250 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <title>Constelar: {{ sistema.titulo }}</title>
     
+    <script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
+    
     <style>
-        #lienzo-constelacion {
-            width: 800px;
-            height: 600px;
-            border: 2px solid #333;
-            background-color: #f0f0f0;
-            position: relative;
+        /* Estilos básicos para el contenedor del lienzo */
+        #container-konva {
+            width: 900px;
+            height: 650px;
+            border: 2px solid #555;
+            background-color: #f8f8f8;
             margin: 20px auto;
+            /* Simula el "ambiente" */
+            /* DEBES TENER esta imagen en static/constelacion/images/fondo_ambiente.png */
+            /* Si no tienes la imagen, la línea de background-image debe ir comentada */
+            /* background-image: url("{% static 'constelacion/images/fondo_ambiente.png' %}"); */
+            background-size: cover;
         }
-        .elemento {
-            position: absolute;
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
-            cursor: grab;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
-            font-size: 14px;
-        }
-        .persona { background-color: #ADD8E6; border: 1px solid blue; }
-        .objeto { background-color: #90EE90; border: 1px solid green; }
-        .concepto { background-color: #FFB6C1; border: 1px solid red; }
     </style>
 </head>
 <body>
-    <h1>Constelando: {{ sistema.titulo }}</h1>
-    <p>Intención: {{ sistema.descripcion }}</p>
-
-    <button onclick="addElement('persona')">Añadir Persona</button>
-    <button onclick="addElement('objeto')">Añadir Objeto</button>
-    <button onclick="addElement('concepto')">Añadir Concepto</button>
+    <h1>Constelando: {{ sistema.titulo }} 🎨</h1>
     
-    <div id="lienzo-constelacion">
-        </div>
+    <div style="text-align: center; margin-bottom: 15px;">
+        <button onclick="addElement('persona')">🧍 Persona</button>
+        <button onclick="addElement('objeto')">📦 Objeto</button>
+        <button onclick="addElement('concepto')">💡 Concepto</button>
+        <button onclick="guardarConstelacion()">💾 Guardar Posiciones</button>
+        <p>Arrastra los elementos y luego guarda. Presiona CTRL + R para rotar.</p>
+        <p><a href="{% url 'constelacion:dashboard_cliente' %}">Volver al Panel</a></p>
+    </div>
+
+    <div id="container-konva"></div>
     
     <form id="guardar-form" method="post">
         {% csrf_token %}
         <input type="hidden" name="action" value="guardar">
         <input type="hidden" name="constelacion_data" id="constelacion-data">
-        <button type="button" onclick="guardarConstelacion()">Guardar Posiciones</button>
     </form>
     
     <script>
-        const lienzo = document.getElementById('lienzo-constelacion');
-        let elementos = []; // Almacenará los datos de la constelación (nombre, tipo, posición)
-        let zIndexCounter = 1;
-
-        // Cargar datos iniciales (si existen)
+        const CONTAINER_ID = 'container-konva';
+        const ANCHO = 900;
+        const ALTO = 650;
+        
+        // 1. Inicializar la Etapa (Stage) y la Capa (Layer) de Konva
+        const stage = new Konva.Stage({
+            container: CONTAINER_ID,
+            width: ANCHO,
+            height: ALTO,
+        });
+        const layer = new Konva.Layer();
+        stage.add(layer);
+        
+        let elementos = []; // Estructura de datos para guardar la constelación
+        
+        // Cargar datos iniciales
+        // Se asume que 'datos_json_iniciales' viene de la vista (views.py)
         const datosIniciales = JSON.parse('{{ datos_json_iniciales|safe }}');
-        if (datosIniciales.length > 0) {
+        if (datosIniciales && datosIniciales.length > 0) {
             elementos = datosIniciales;
             elementos.forEach(data => {
-                renderElement(data.name, data.type, data.x, data.y);
+                renderElement(data.name, data.type, data.x, data.y, data.rotation || 0, data.img_src || '');
             });
         }
+        
+        // Función auxiliar para cargar imágenes
+        function loadImage(src, callback) {
+            const img = new Image();
+            img.onload = function() {
+                callback(img);
+            };
+            img.onerror = function() {
+                console.error("Error al cargar la imagen: " + src);
+                // Si la imagen falla, podemos pasar un valor nulo para que use la forma de respaldo
+                callback(null); 
+            };
+            // Usa la etiqueta 'static' de Django para la ruta. 
+            // NOTA: Esta ruta DEBE ser relativa a la función estática de Django, 
+            // pero la pasamos como string para que JavaScript la interprete.
+            img.src = src; 
+        }
 
-        // 1. AÑADIR ELEMENTO
+        // 3. AÑADIR ELEMENTO AVANZADO (Muñeco)
         function addElement(type) {
             const name = prompt(`Introduce el nombre para el nuevo ${type}:`);
-            if (name) {
-                // Posición inicial aleatoria
-                const x = 50 + Math.random() * 200; 
-                const y = 50 + Math.random() * 100;
-
-                const data = { name, type, x, y };
-                elementos.push(data);
-                renderElement(name, type, x, y);
-            }
-        }
-
-        // 2. RENDERIZAR (DIBUJAR) ELEMENTO
-        function renderElement(name, type, x, y) {
-            const div = document.createElement('div');
-            div.className = `elemento ${type}`;
-            div.textContent = name;
-            div.style.left = `${x}px`;
-            div.style.top = `${y}px`;
-            div.dataset.name = name; // Guardar el nombre para identificación
+            if (!name) return;
             
-            // Hacer que el elemento sea arrastrable
-            makeDraggable(div);
-            lienzo.appendChild(div);
+            let img_url = '';
+            let color = '';
+            
+            // Usamos las URLs estáticas de Django, DEBES tener estos archivos en 
+            // static/constelacion/images/
+            switch (type) {
+                case 'persona':
+                    img_url = "{% static 'constelacion/images/muñeco_persona.png' %}"; 
+                    color = 'blue'; 
+                    break;
+                case 'objeto':
+                    img_url = "{% static 'constelacion/images/muñeco_objeto.png' %}";
+                    color = 'green';
+                    break;
+                case 'concepto':
+                    // Para concepto, generalmente no usamos imagen, usamos color
+                    img_url = "{% static 'constelacion/images/muñeco_concepto.png' %}";
+                    color = 'red';
+                    break;
+                default:
+                    return;
+            }
+            
+            // Posición inicial aleatoria
+            const x = 50 + Math.random() * 200; 
+            const y = 50 + Math.random() * 100;
+            
+            // Renderiza y añade a la lista
+            renderElement(name, type, x, y, 0, img_url, color);
         }
 
-        // 3. HACER ARRASTRABLE (Draggable)
-        function makeDraggable(element) {
-            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-            element.onmousedown = dragMouseDown;
+        // 4. RENDERIZAR (DIBUJAR) ELEMENTO CON KONVA
+        function renderElement(name, type, x, y, rotation, img_url, color) {
+            const group = new Konva.Group({
+                x: x,
+                y: y,
+                draggable: true,
+                rotation: rotation || 0,
+                name: 'elemento-group', 
+                id: name,
+            });
 
-            function dragMouseDown(e) {
-                e = e || window.event;
-                e.preventDefault();
-                // Obtener la posición inicial del ratón
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                element.style.zIndex = zIndexCounter++; // Pone el elemento arrastrado arriba
-                document.onmouseup = closeDragElement;
-                document.onmousemove = elementDrag;
+            // 4a. Añadir la figura (Imagen o Forma)
+            if (img_url) {
+                loadImage(img_url, function(img) {
+                    let elementShape;
+                    if (img) {
+                        elementShape = new Konva.Image({
+                            image: img,
+                            width: 50, 
+                            height: 50,
+                            offsetX: 25,
+                            offsetY: 25,
+                        });
+                    } else {
+                        // Respaldo si la imagen falla
+                        elementShape = new Konva.Circle({
+                            radius: 25,
+                            fill: color || 'gray',
+                            stroke: 'black',
+                            strokeWidth: 2,
+                        });
+                    }
+                    group.add(elementShape);
+                    layer.draw(); 
+                });
+            } else {
+                // Si no hay URL de imagen (ej. Concepto), usamos una forma simple
+                const elementShape = new Konva.Circle({
+                    radius: 25,
+                    fill: color || 'red',
+                    stroke: 'black',
+                    strokeWidth: 2,
+                    offsetX: 0,
+                    offsetY: 0,
+                });
+                group.add(elementShape);
             }
+            
+            // 4b. Añadir el texto del nombre
+            const text = new Konva.Text({
+                text: name,
+                fontSize: 12,
+                fontFamily: 'Arial',
+                fill: '#000',
+                offsetY: -35,
+                align: 'center',
+                width: 100, 
+                offsetX: 50,
+            });
+            group.add(text);
+            
+            layer.add(group);
+            layer.draw();
 
-            function elementDrag(e) {
-                e = e || window.event;
-                e.preventDefault();
-                // Calcular la nueva posición del ratón
-                pos1 = pos3 - e.clientX;
-                pos2 = pos4 - e.clientY;
-                pos3 = e.clientX;
-                pos4 = e.clientY;
-                // Establecer la nueva posición del elemento
-                element.style.top = (element.offsetTop - pos2) + "px";
-                element.style.left = (element.offsetLeft - pos1) + "px";
-            }
-
-            function closeDragElement() {
-                // Dejar de arrastrar al soltar el botón
-                document.onmouseup = null;
-                document.onmousemove = null;
-                // Actualizar la posición en el array 'elementos'
-                updateElementPosition(element);
+            // 5. Evento al dejar de arrastrar: Actualizar datos
+            group.on('dragend', function() {
+                updateElementPosition(this);
+            });
+            
+            // Evento para guardar la rotación
+            group.on('transformend', function() {
+                updateElementPosition(this);
+            });
+            
+            // Agregar a la estructura de datos si es nuevo
+            if (!elementos.some(e => e.name === name)) {
+                elementos.push({ name, type, x, y, rotation: 0, img_src: img_url });
             }
         }
         
-        // 4. ACTUALIZAR POSICIÓN EN LOS DATOS
-        function updateElementPosition(element) {
-            const name = element.dataset.name;
-            const newX = element.offsetLeft;
-            const newY = element.offsetTop;
+        // 5. MANEJO DE LA INTERACCIÓN AVANZADA (Rotación)
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'r') {
+                e.preventDefault(); 
+                
+                // Rotar el último elemento en el array:
+                if (elementos.length > 0) {
+                    const lastElementData = elementos[elementos.length - 1];
+                    const elementGroup = stage.findOne(`#${lastElementData.name}`);
+                    
+                    if (elementGroup) {
+                        const newRotation = (elementGroup.rotation() + 45) % 360;
+                        elementGroup.rotation(newRotation);
+                        layer.draw();
+                        updateElementPosition(elementGroup); // Guarda la rotación
+                    }
+                }
+            }
+        });
+
+
+        // 6. ACTUALIZAR POSICIÓN Y ROTACIÓN EN LOS DATOS
+        function updateElementPosition(group) {
+            const name = group.id();
             
             const index = elementos.findIndex(e => e.name === name);
             if (index !== -1) {
-                elementos[index].x = newX;
-                elementos[index].y = newY;
+                elementos[index].x = group.x();
+                elementos[index].y = group.y();
+                elementos[index].rotation = group.rotation();
             }
         }
 
-        // 5. FUNCIÓN FINAL PARA GUARDAR (Envía los datos a Django)
+        // 7. FUNCIÓN FINAL PARA GUARDAR (Envía los datos a Django)
         function guardarConstelacion() {
-            // Convierte el array de elementos a una cadena JSON
+            // Asegúrate de que los datos estén actualizados antes de guardar
+            layer.find('.elemento-group').forEach(group => updateElementPosition(group));
+
             const jsonString = JSON.stringify(elementos);
-            
-            // Coloca el JSON en el campo oculto del formulario
             document.getElementById('constelacion-data').value = jsonString;
-            
-            // Envía el formulario a la vista de Django
-            document.getElementById('guardar-form').submit(); 
+            document.getElementById('guardar-form').submit();
         }
+
     </script>
 </body>
 </html>

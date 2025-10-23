@@ -17,21 +17,23 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from constelacion.views import inicio
+from django.conf import settings 
+from django.conf.urls.static import static
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('accounts/', include('django.contrib.auth.urls')),
-
-    # 🌟 Usar la vista de inicio directamente en la raíz (/)
-    path('', inicio, name='inicio'), # <-- Llama a views.inicio, no a include
-
-    # 🌟 Redirige todo lo que vaya a 'constelaciones/' a las URLs de la app
-    # path('constelaciones/', include('constelacion.urls')),
-
-    # 🌟 Añade las URLs de autenticación por defecto de Django
-    # Las URLs serán /accounts/login/, /accounts/logout/, etc.
-    path('accounts/', include('django.contrib.auth.urls')),
     
-    # Redirige la raíz
+    # 🌟 1. Rutas de Autenticación: Debe ir solo una vez
+    path('accounts/', include('django.contrib.auth.urls')), 
+
+    # 🌟 2. Ruta de Inicio (/): Usa tu vista de inicio
+    path('', inicio, name='inicio'), 
+
+    # 🌟 3. Rutas de tu App: Incluye el resto de las URLs de 'constelacion'
     path('', include('constelacion.urls')),
 ]
+
+# Esto es SOLO para desarrollo (DEBUG=True) y permite que se carguen las imágenes
+if settings.DEBUG:
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-yjkypc3_#9)qv2sd_jiuoflsx%83-b7cd_bj3cj_2es#83g688
 
 # ⚠️ MUY IMPORTANTE: Cambia 'DEBUG = True' por 'DEBUG = False' en producción.
 # Solo pon 'True' durante el desarrollo local.
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', 'nombre-de-tu-app.onrender.com']
 
@@ -58,10 +58,11 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'core', 'templates')],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
+                'django.template.context_processors.debug', 
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',

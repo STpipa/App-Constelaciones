@@ -1,8 +1,8 @@
 # app_constelaciones/constelacion/views.py
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib.auth.forms import UserCreationForm # Importamos el formulario estándar de Django
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import SistemaConstelar, Elemento
 from django.contrib.auth.decorators import user_passes_test
 import json
@@ -63,34 +63,51 @@ def crear_sistema(request):
 
 @login_required
 def detalle_sistema(request, pk):
-    sistema = SistemaConstelar.objects.get(pk=pk) 
+    # Usamos get_object_or_404 para evitar un error 500 si el PK no existe
+    sistema = get_object_or_404(SistemaConstelar, pk=pk) 
     
     if request.method == 'POST':
         action = request.POST.get('action')
         
         if action == 'guardar':
-            # 1. Obtiene la cadena JSON de la constelación
+            # 1. Obtiene la cadena JSON
             constelacion_data_json = request.POST.get('constelacion_data', '[]')
             
-            # 2. Actualiza el campo JSON en el modelo
-            sistema.configuracion_visual_json = json.loads(constelacion_data_json)
+            # 2. Carga y Guarda el JSON
+            try:
+                data = json.loads(constelacion_data_json)
+            except json.JSONDecodeError:
+                # Si el JSON está mal, lo tratamos como vacío para evitar un error fatal
+                data = []
+
+            sistema.configuracion_visual_json = data
             sistema.save()
             
-            # 3. Guardar elementos individuales (OPCIONAL, pero recomendado para el Terapeuta)
-            # Primero eliminamos los antiguos elementos para simplificar
+            # 3. Regeneración de elementos (sin cambios aquí)
             sistema.elementos.all().delete() 
-            
-            # Iteramos sobre los datos JSON para recrear los objetos Elemento en la DB
-            for item in sistema.configuracion_visual_json:
+            for item in data:
+                # Nos aseguramos de que el 'tipo' esté en mayúsculas para coincidir con TIPO_CHOICES
+                tipo_normalizado = item.get('type', 'CON').upper() 
                 Elemento.objects.create(
                     sistema=sistema,
                     nombre=item.get('name', 'Sin Nombre'),
-                    tipo=item.get('type', 'CON'), # Usar 'CON' como tipo por defecto si no lo encuentra
-                    # Rol y notas se pueden añadir más tarde con un formulario de edición
+                    tipo=tipo_normalizado[:3], # Tomamos solo los primeros 3 caracteres (PER, OBJ, CON)
                 )
 
-            # Mantenemos al usuario en la misma página después de guardar
             return redirect('constelacion:detalle_sistema', pk=sistema.pk)
+    
+    # Lógica para GET (mostrar la página)
+    
+    # Asegúrate de que si el campo es None, se devuelva un array vacío para JSON
+    datos_iniciales = sistema.configuracion_visual_json if sistema.configuracion_visual_json else []
+    
+    context = {
+        'sistema': sistema,
+        # Convertimos a JSON para el frontend, ¡asegurándonos de que sea un array vacío si no hay datos!
+        'datos_json_iniciales': json.dumps(datos_iniciales), 
+    }
+    
+    return render(request, 'constelacion/detalle_sistema.html', context)
     
     # Lógica para GET (mostrar la página)
     context = {

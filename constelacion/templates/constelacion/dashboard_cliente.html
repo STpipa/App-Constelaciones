@@ -5,36 +5,33 @@
     <title>Mi Panel de Constelaciones</title>
 </head>
 <body>
-    <h2>Hola, {{ user.username }} 👋</h2>
-    <h3>Mis Sistemas Constelares Creados</h3>
+    <h1>Panel de Cliente: Mis Constelaciones ✨</h1>
     
-    <p><a href="{% url 'constelacion:crear_sistema' %}">➕ Iniciar Nueva Constelación</a></p>
+    <p>Bienvenido, **{{ user.username }}**. Este es tu espacio para crear y gestionar sistemas.</p>
     
+    <div>
+        <a href="{% url 'constelacion:crear_sistema' %}">➕ Crear Nuevo Sistema Constelar</a> |
+        <a href="{% url 'inicio' %}">Volver al Inicio</a> |
+        <a href="{% url 'logout' %}">Cerrar Sesión</a>
+    </div>
+
+    <hr>
+
+    <h2>Sistemas Guardados</h2>
+
     {% if sistemas %}
-        <table border="1" cellpadding="10" cellspacing="0">
-            <thead>
-                <tr>
-                    <th>Título</th>
-                    <th>Fecha de Creación</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for sistema in sistemas %}
-                <tr>
-                    <td>{{ sistema.titulo }}</td>
-                    <td>{{ sistema.fecha_creacion|date:"d M Y H:i" }}</td>
-                    <td>
-                        <a href="{% url 'constelacion:detalle_sistema' pk=sistema.pk %}">Ver / Editar</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <ul>
+            {% for sistema in sistemas %}
+                <li>
+                    Título: **{{ sistema.titulo }}** (Última edición: {{ sistema.fecha_modificacion|date:"d M Y, H:i" }})
+                    
+                    [ <a href="{% url 'constelacion:detalle_sistema' pk=sistema.pk %}">Ver / Editar</a> ]
+                </li>
+            {% endfor %}
+        </ul>
     {% else %}
-        <p>Aún no has creado ningún sistema. ¡Empieza uno ahora!</p>
+        <p>Aún no tienes sistemas constelares creados. ¡Comienza uno nuevo!</p>
     {% endif %}
 
-    <p><a href="{% url 'logout' %}">Cerrar Sesión</a></p>
 </body>
 </html>

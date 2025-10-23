@@ -8,7 +8,7 @@ app_name = 'constelacion'
 urlpatterns = [
     # Mapea la ruta '/' (relativa a lo que definimos en core/urls.py)
     # y la asocia con una función llamada 'inicio' dentro de 'views.py'
-    path('', views.inicio, name='inicio'),
+    # path('', views.inicio, name='inicio'),
     
     # 🌟 NUEVA RUTA DE REGISTRO
     path('registro/', views.registro, name='registro'),

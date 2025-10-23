@@ -2,10 +2,28 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib.auth.forms import UserCreationForm # Importamos el formulario estándar de Django
+<<<<<<< HEAD
 from django.contrib.auth.decorators import login_required, user_passes_test
+=======
+from django.contrib.auth.decorators import login_required
+from django import forms
+>>>>>>> ea6a50eb3166c76fcd699725d7c1a6ad4c36dbda
 from .models import SistemaConstelar, Elemento
 from django.contrib.auth.decorators import user_passes_test
 import json
+
+
+# -------------------------------------------------------------
+# Paso 1: Definir el Formulario (Se requiere un formulario simple)
+# -------------------------------------------------------------
+
+# Definimos un formulario simple para crear el título del sistema.
+# Si ya lo tenías, asegúrate de que esté correcto.
+class SistemaConstelarForm(forms.ModelForm):
+    class Meta:
+        model = SistemaConstelar
+        # Solo le pedimos el titulo al usuario
+        fields = ['titulo']
 
 
 # Create your views here.
@@ -41,26 +59,27 @@ def crear_sistema(request):
     Vista para iniciar la creación de un nuevo Sistema Constelar interactivo.
     """
     if request.method == 'POST':
-        # Esta parte se usará para guardar el JSON del frontend
-        
-        # 1. Obtener los datos del formulario (título y descripción)
-        titulo = request.POST.get('titulo')
-        descripcion = request.POST.get('descripcion')
-        
-        # 2. Inicializar el Sistema Constelar (sin el JSON de constelación aún)
-        sistema = SistemaConstelar.objects.create(
-            cliente=request.user,
-            titulo=titulo,
-            descripcion=descripcion,
-        )
-        
-        # 3. Guardaremos la estructura de los elementos más tarde.
-        # Por ahora, solo redirigimos a donde se hará la edición del genograma (detalle)
-        return redirect('constelacion:detalle_sistema', pk=sistema.pk) 
-    
-    # Si es GET, muestra el formulario inicial
-    return render(request, 'constelacion/crear_sistema.html', {})
+        form = SistemaConstelarForm(request.POST)
+        if form.is_valid():
+            # No guardarmos el formulario inmediatamente (commit=False)
+            nuevo_sistema = form.save(commit=False)
 
+            # Asignamos el usuario actual (el que está logueado)
+            nuevo_sistema.cliente = request.user
+
+            # El campo 'constelacion_data' (el JSON) se deja vacío por ahora
+            # ya que se llenará en detalle_sistema.
+             
+            nuevo_sistema.save()
+
+            # Redirigimos al lienzo interactivo para empezar a constelar
+            return redirect('constelacion:detalle_sistema', pk=nuevo_sistema.pk)
+    else:
+        # Si es una solicitud GET, mostramos el formulario vacío
+        form = SistemaConstelarForm()
+        
+    return render(request, 'constelacion/crear_sistema.html', {'form': form}) 
+        
 @login_required
 def detalle_sistema(request, pk):
     # Usamos get_object_or_404 para evitar un error 500 si el PK no existe

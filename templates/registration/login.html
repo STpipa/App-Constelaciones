@@ -8,7 +8,6 @@
     <h2>Iniciar Sesión</h2>
     
     {% if form.errors %}
-<<<<<<< HEAD
         <p style="color: red;">Tu nombre de usuario o contraseña son incorrectos. Inténtalo de nuevo.</p>
     {% endif %}
 
@@ -24,15 +23,5 @@
 
     <p>¿No tienes cuenta? <a href="{% url 'constelacion:registro' %}">Regístrate aquí</a></p>
     <p><a href="{% url 'inicio' %}">Volver al inicio</a></p>
-=======
-        <p style="color: red;">Tu usuario y/o contraseña no coinciden. Inténtalo de nuevo.</p>
-    {% endif %}
-
-    <form method="post">
-        {% csrf_token %} {{ form.as_p }} <button type="submit">Entrar</button>
-    </form>
-    
-    <p>¿No tienes una cuenta? <a href="{% url 'constelacion:registro' %}">Regístrate aquí</a></p>
->>>>>>> ea6a50eb3166c76fcd699725d7c1a6ad4c36dbda
 </body>
 </html>

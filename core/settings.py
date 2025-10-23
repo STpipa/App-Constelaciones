@@ -58,20 +58,10 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-<<<<<<< HEAD
         'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-=======
-        # DIRS para plantillas globales (login, logout, etc.)
-        'DIRS': [BASE_DIR / 'templates'], 
-        # APP_DIRS para plantillas de las apps (constelacion/templates/constelacion/...) y admin
-        'APP_DIRS': True, 
-        'OPTIONS': {
-            'context_processors': [
-                # ... (asegúrate que estén todos)
->>>>>>> ea6a50eb3166c76fcd699725d7c1a6ad4c36dbda
                 'django.template.context_processors.debug', 
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',

@@ -19,16 +19,11 @@ from django.urls import path, include
 from constelacion.views import inicio
 from django.conf import settings 
 from django.conf.urls.static import static
-<<<<<<< HEAD
-
-=======
->>>>>>> ea6a50eb3166c76fcd699725d7c1a6ad4c36dbda
 
 urlpatterns = [
     # 1. Panel de Administración de Django
     path('admin/', admin.site.urls),
     
-<<<<<<< HEAD
     # 🌟 1. Rutas de Autenticación: Debe ir solo una vez
     path('accounts/', include('django.contrib.auth.urls')), 
 
@@ -42,22 +37,3 @@ urlpatterns = [
 # Esto es SOLO para desarrollo (DEBUG=True) y permite que se carguen las imágenes
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-=======
-    # 2. Rutas de Autenticación de Django (login, logout, password_reset, etc.)
-    # Estas URLs serán: /accounts/login/, /accounts/logout/, etc.
-    path('accounts/', include('django.contrib.auth.urls')), 
-
-    # 3. Rutas de la Aplicación 'constelacion'
-
-    # a) Ruta de Inicio (la raíz del sitio '/')
-    path('', inicio, name='inicio'), 
-    
-    # b) El resto de las URLs de la aplicación (dashboard, crear, detalle, etc.)
-    # Estas URLs serán: /dashboard/, /registro/, /crear/, etc.
-    path('', include('constelacion.urls')),
-]
-
-# Configuración de archivos estáticos SÓLO para modo DEBUG
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
->>>>>>> ea6a50eb3166c76fcd699725d7c1a6ad4c36dbda

@@ -256,6 +256,87 @@
             document.getElementById('guardar-form').submit();
         }
         
+        // ----------------------------------------------------------------------
+        // 9. LÓGICA DE INTERACCIÓN: ROTACIÓN CON TECLADO
+        // ----------------------------------------------------------------------
+
+        // Añadir un Transformer para permitir rotación y escalado (opcional)
+        let transformer = new Konva.Transformer();
+        layer.add(transformer);
+
+        // Función para eliminar un elemento por su nombre (ID)
+        function removeElement(name) {
+            // 1. Eliminar del array de datos
+            elementos = elementos.filter(e => e.name !== name);
+            
+            // 2. Eliminar del lienzo
+            const groupToRemove = stage.findOne(`#${name}`);
+            if (groupToRemove) {
+                groupToRemove.destroy();
+                transformer.nodes([]); // Quitar la selección si el elemento era el seleccionado
+                layer.draw();
+            }
+        }
+
+        // Escucha el clic para selección (izquierdo) y clic derecho para menú
+        stage.on('click tap', function(e) {
+            // Si se clickeó en la capa (fondo), deselecciona
+            if (e.target === stage || e.target === layer) {
+                transformer.nodes([]);
+                layer.draw();
+                return;
+            }
+            
+            // Si el clic es sobre un grupo, seleccionarlo
+            if (e.target.getParent().name() === 'elemento-group') {
+                const group = e.target.getParent();
+                transformer.nodes([group]);
+                layer.draw();
+            }
+        });
+
+        // Escucha el evento de clic derecho (contextmenu)
+        stage.on('contextmenu', function(e) {
+            // Prevenir el menú contextual predeterminado del navegador
+            e.evt.preventDefault(); 
+            
+            // Si el clic derecho es sobre un grupo
+            if (e.target.getParent().name() === 'elemento-group') {
+                const group = e.target.getParent();
+                const elementName = group.id();
+
+                if (confirm(`¿Estás seguro de que quieres eliminar el elemento "${elementName}"?`)) {
+                    removeElement(elementName);
+                }
+            }
+        });
+
+
+        // Evento de teclado para rotar el elemento seleccionado
+        document.addEventListener('keydown', function(e) {
+            const selectedNodes = transformer.nodes();
+            
+            // Verifica si se presiona 'R' (o 'r') junto con la tecla Ctrl (o Cmd en Mac)
+            if ((e.key === 'r' || e.key === 'R') && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault(); // Evita el refresco del navegador
+                
+                if (selectedNodes.length > 0) {
+                    const group = selectedNodes[0];
+                    
+                    // Rotar 15 grados. Si lo quieres más sutil, usa 5 o 10.
+                    const nuevaRotacion = group.rotation() + 15; 
+                    group.rotation(nuevaRotacion);
+                    
+                    // Forzar la actualización en la capa
+                    layer.draw();
+                    
+                    // Actualizar las coordenadas y rotación en tu array de datos
+                    updateElementPosition(group);
+                    
+                    console.log(`Elemento ${group.id()} rotado a ${nuevaRotacion} grados.`);
+                }
+            }
+        });
         
         
     </script>

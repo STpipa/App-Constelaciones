@@ -1,12 +1,10 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <title>Constelar: {{ sistema.titulo }}</title>
-    
-    <script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
-    
+{% load i18n %}
+
+{% block title %}Detalle: {{ sistema.titulo }}{% endblock %}
+
+{% block extra_head %}
     <style>
         /* Estilos básicos para el contenedor del lienzo */
         #container-konva {
@@ -15,15 +13,15 @@
             border: 2px solid #555;
             background-color: #f8f8f8;
             margin: 20px auto;
-            /* Simula el "ambiente" */
             /* DEBES TENER esta imagen en static/constelacion/images/fondo_ambiente.png */
             /* Si no tienes la imagen, la línea de background-image debe ir comentada */
             /* background-image: url("{% static 'constelacion/images/fondo_ambiente.png' %}"); */
             background-size: cover;
         }
     </style>
-</head>
-<body>
+{% endblock extra_head %}
+
+{% block content %}
     <h1>Constelando: {{ sistema.titulo }} 🎨</h1>
     
     <div style="text-align: center; margin-bottom: 15px;">
@@ -37,72 +35,88 @@
 
     <div id="container-konva"></div>
     
-    <form id="guardar-form" method="post">
+    <form id="guardar-form" method="post" style="display: none;">
         {% csrf_token %}
         <input type="hidden" name="action" value="guardar">
         <input type="hidden" name="constelacion_data" id="constelacion-data">
     </form>
+
+{% endblock content %}
+
+
+{% block extra_js %}
+    <script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
     
     <script>
+        // ----------------------------------------------------------------------
+        // 1. INICIALIZACIÓN DE KONVA Y VARIABLES GLOBALES
+        // ----------------------------------------------------------------------
         const CONTAINER_ID = 'container-konva';
         const ANCHO = 900;
         const ALTO = 650;
         
-        // 1. Inicializar la Etapa (Stage) y la Capa (Layer) de Konva
         const stage = new Konva.Stage({
             container: CONTAINER_ID,
             width: ANCHO,
             height: ALTO,
         });
-        let layer = new Konva.Layer(); // 
+    
+        // Usamos 'let' para que la capa pueda ser manipulada
+        let layer = new Konva.Layer();
         stage.add(layer);
+        
+        // Array que contendrá los objetos de datos que se envían al backend
+        let elementos = []; 
 
-        let elementos = []; // Estructura de datos para guardar la constelación
-
-        // ⚠️ CRUCIAL: Obtener los datos JSON del backend
-        // Este valor viene de la vista (views.py) y está listo para ser parseado
-        const datosJsonIniciales = JSON.parse('{{ datos_json_iniciales|safe }}');
-
-        // --------------------------------------------------------------------
-        // LÓGICA DE CARGA INICIAL: Reconstruir la constelación si existen datos
-        // --------------------------------------------------------------------
-        if (datosJsonIniciales && datosJsonIniciales.children && datosJsonIniciales.children.length > 0) {
-            // Usamos el método load() de Konva para restaurar la capa
-            layer.destroy(); // Eliminamos la capa vacía inicial
-
-            // ⬅️ CREAMOS Y REASIGNAMOS la capa con los datos.
-            layer = Konva.Node.create(datosJsonIniciales); // Recreamos la capa desde el JSON
+        // ----------------------------------------------------------------------
+        // 2. LÓGICA DE CARGA DE DATOS (EL PUNTO CRÍTICO)
+        // ----------------------------------------------------------------------
+        
+        // 💡 Paso 1: Obtener los datos JSON del backend y parsearlos.
+        const datosIniciales = JSON.parse('{{ datos_json_iniciales|safe }}');
+        
+        if (datosIniciales && datosIniciales.length > 0) {
+            console.log("Cargando sistema guardado con", datosIniciales.length, "elementos.");
             
-            stage.add(layer);
-            layer.draw(); 
-        
-            // También debes reconstruir los objetos Konva.Text a partir de los datos
-            // ... (Tu lógica para reconstruir los elementos a partir de datosJsonIniciales)
-        
+            // 💡 Paso 2: Asignamos los datos leídos a la variable global 'elementos'
+            elementos = datosIniciales; 
+            
+            // 💡 Paso 3: Iteramos y llamamos a la función de dibujo
+            elementos.forEach(data => {
+                // Asegúrate de que todos los campos necesarios son pasados a renderElement
+                renderElement(
+                    data.name, 
+                    data.type, 
+                    data.x, 
+                    data.y, 
+                    data.rotation || 0, 
+                    data.img_src || '', // Ya viene con el path /static/...
+                    data.color || ''
+                );
+            });
         } else {
-            // Si no hay datos, inicializamos con la capa vacía (que ya hiciste)
             console.log("Sistema Constelar vacío. Comienza a crear!");
         }
+
+        // ----------------------------------------------------------------------
+        // 3. FUNCIONES AUXILIARES DE KONVA
+        // ----------------------------------------------------------------------
         
-        
-        // Función auxiliar para cargar imágenes
+        // Función auxiliar para cargar imágenes (Añadimos manejo de error)
         function loadImage(src, callback) {
             const img = new Image();
             img.onload = function() {
                 callback(img);
             };
             img.onerror = function() {
-                console.error("Error al cargar la imagen: " + src);
-                // Si la imagen falla, podemos pasar un valor nulo para que use la forma de respaldo
+                console.error("❌ ERROR: No se pudo cargar la imagen:", src);
+                // Si falla la imagen, pasamos null al callback para usar un fallback (ej: un círculo)
                 callback(null); 
             };
-            // Usa la etiqueta 'static' de Django para la ruta. 
-            // NOTA: Esta ruta DEBE ser relativa a la función estática de Django, 
-            // pero la pasamos como string para que JavaScript la interprete.
             img.src = src; 
         }
-
-        // 3. AÑADIR ELEMENTO AVANZADO (Muñeco)
+        
+        // 4. AÑADIR ELEMENTO AVANZADO (Llamada desde el botón)
         function addElement(type) {
             const name = prompt(`Introduce el nombre para el nuevo ${type}:`);
             if (!name) return;
@@ -110,10 +124,10 @@
             let img_url = '';
             let color = '';
             
-            // Usamos las URLs estáticas de Django, DEBES tener estos archivos en 
-            // static/constelacion/images/
+            // Usamos las URLs estáticas de Django
             switch (type) {
                 case 'persona':
+                    // Utilizamos la etiqueta 'static' para asegurar el path correcto
                     img_url = "{% static 'constelacion/images/muñeco_persona.png' %}"; 
                     color = 'blue'; 
                     break;
@@ -122,7 +136,6 @@
                     color = 'green';
                     break;
                 case 'concepto':
-                    // Para concepto, generalmente no usamos imagen, usamos color
                     img_url = "{% static 'constelacion/images/muñeco_concepto.png' %}";
                     color = 'red';
                     break;
@@ -138,8 +151,9 @@
             renderElement(name, type, x, y, 0, img_url, color);
         }
 
-        // 4. RENDERIZAR (DIBUJAR) ELEMENTO CON KONVA
+        // 5. RENDERIZAR (DIBUJAR) ELEMENTO CON KONVA
         function renderElement(name, type, x, y, rotation, img_url, color) {
+            
             const group = new Konva.Group({
                 x: x,
                 y: y,
@@ -168,13 +182,15 @@
                             fill: color || 'gray',
                             stroke: 'black',
                             strokeWidth: 2,
+                            offsetX: 0,
+                            offsetY: 0,
                         });
                     }
                     group.add(elementShape);
                     layer.draw(); 
                 });
             } else {
-                // Si no hay URL de imagen (ej. Concepto), usamos una forma simple
+                // Si no hay URL de imagen (ej. Concepto sin imagen), usamos una forma simple
                 const elementShape = new Konva.Circle({
                     radius: 25,
                     fill: color || 'red',
@@ -212,72 +228,13 @@
                 updateElementPosition(this);
             });
             
-            // Agregar a la estructura de datos si es nuevo
+            // 6. Solo añadir a la lista si es un nuevo elemento
             if (!elementos.some(e => e.name === name)) {
-                elementos.push({ name, type, x, y, rotation: 0, img_src: img_url });
+                elementos.push({ name, type, x, y, rotation: 0, img_src: img_url, color: color });
             }
         }
         
-        // 5. MANEJO DE LA INTERACCIÓN AVANZADA (Rotación)
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'r') {
-                e.preventDefault(); 
-                
-                // Rotar el último elemento en el array:
-                if (elementos.length > 0) {
-                    const lastElementData = elementos[elementos.length - 1];
-                    const elementGroup = stage.findOne(`#${lastElementData.name}`);
-                    
-                    if (elementGroup) {
-                        const newRotation = (elementGroup.rotation() + 45) % 360;
-                        elementGroup.rotation(newRotation);
-                        layer.draw();
-                        updateElementPosition(elementGroup); // Guarda la rotación
-                    }
-                }
-            }
-        });
-
-        function guardarSistema() {
-            // 1. Serializar el estado de la capa principal (layer)
-            // El método toJSON() de Konva convierte el estado completo de la capa 
-            // y sus hijos (Elementos) en una cadena JSON.
-            const constelacionData = layer.toJSON();
-
-            // 2. Crear un formulario dinámico para enviar los datos por POST a Django
-            const form = document.createElement('form');
-            form.method = 'POST';
-            // El action debe apuntar a la misma URL de la vista detalle_sistema
-            form.action = ''; 
-
-            // 3. Crear el campo CSRF Token (Obligatorio en Django)
-            const csrfToken = document.createElement('input');
-            csrfToken.type = 'hidden';
-            csrfToken.name = 'csrfmiddlewaretoken';
-            // Obtenemos el valor del token que está en la plantilla
-            csrfToken.value = document.querySelector('[name=csrfmiddlewaretoken]').value;
-            form.appendChild(csrfToken);
-
-            // 4. Crear el campo 'constelacion_data' (el JSON serializado)
-            const dataInput = document.createElement('input');
-            dataInput.type = 'hidden';
-            dataInput.name = 'constelacion_data';
-            dataInput.value = constelacionData; // El JSON del lienzo
-            form.appendChild(dataInput);
-    
-            // 5. Crear un campo 'action' para que la vista sepa qué hacer
-            const actionInput = document.createElement('input');
-            actionInput.type = 'hidden';
-            actionInput.name = 'action';
-            actionInput.value = 'guardar'; // Le decimos a Django que queremos guardar
-            form.appendChild(actionInput);
-
-            // 6. Enviar el formulario
-            document.body.appendChild(form);
-            form.submit();
-        }
-
-        // 6. ACTUALIZAR POSICIÓN Y ROTACIÓN EN LOS DATOS
+        // 7. ACTUALIZAR POSICIÓN Y ROTACIÓN EN LOS DATOS
         function updateElementPosition(group) {
             const name = group.id();
             
@@ -289,16 +246,17 @@
             }
         }
 
-        // 7. FUNCIÓN FINAL PARA GUARDAR (Envía los datos a Django)
+        // 8. FUNCIÓN FINAL PARA GUARDAR (Envía los datos a Django)
         function guardarConstelacion() {
-            // Asegúrate de que los datos estén actualizados antes de guardar
+            // 🚨 Asegúrate de que los datos estén actualizados ANTES de guardar
             layer.find('.elemento-group').forEach(group => updateElementPosition(group));
 
             const jsonString = JSON.stringify(elementos);
             document.getElementById('constelacion-data').value = jsonString;
             document.getElementById('guardar-form').submit();
         }
-
+        
+        
+        
     </script>
-</body>
-</html>
+{% endblock extra_js %} 

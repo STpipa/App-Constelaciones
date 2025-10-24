@@ -119,12 +119,20 @@ def detalle_sistema(request, pk):
                     tipo=tipo_normalizado[:3], # Tomamos solo los primeros 3 caracteres (PER, OBJ, CON)
                 )
 
-            return redirect('constelacion:detalle_sistema', pk=sistema.pk)
-    
+            # return redirect('constelacion:detalle_sistema', pk=sistema.pk)
+            return redirect(request.path) # ✅ USA ESTO: Redirige a la misma URL
     # Lógica para GET (mostrar la página)
+    # 🌟 AÑADE ESTA LÍNEA DE DEBUG 🌟
+    print("--- INICIO DE LECTURA (GET) ---")
+    
+    # Esta línea debe tener los datos guardados, si la DB escribió correctamente
+    data_to_template = sistema.configuracion_visual_json
+    
+    print(f"JSON enviado a la plantilla: {data_to_template if data_to_template else '[]'}...")
+    print(f"Número de elementos leídos: {len(data_to_template) if data_to_template else 0}")
     
     # Asegúrate de que si el campo es None, se devuelva un array vacío para JSON
-    datos_iniciales = sistema.configuracion_visual_json if sistema.configuracion_visual_json else []
+    datos_iniciales = data_to_template if data_to_template else []
     
     context = {
         'sistema': sistema,
@@ -133,15 +141,7 @@ def detalle_sistema(request, pk):
     }
     
     return render(request, 'constelacion/detalle_sistema.html', context)
-    
-    # Lógica para GET (mostrar la página)
-    context = {
-        'sistema': sistema,
-        # Asegúrate de pasar el JSON como una cadena segura para que JS lo pueda parsear
-        'datos_json_iniciales': json.dumps(sistema.configuracion_visual_json or []),
-    }
-    
-    return render(request, 'constelacion/detalle_sistema.html', context)
+
 
 @login_required
 def dashboard_cliente(request):

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Título por defecto{% endblock %}</title>
+    {% block extra_head %}{% endblock extra_head %}
+</head>
+<body>
+    <header>
+        </header>
+
+    <main>
+        {% block content %}
+        {% endblock content %}
+    </main>
+
+    <footer>
+        </footer>
+
+    {% block extra_js %}{% endblock extra_js %}
+</body>
+</html>
